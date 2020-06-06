@@ -37,9 +37,21 @@
  *    largely determines the linearity of the meter.
  *  - Version 3.13:
  *    First step to add remote logging of the measured values. With this modification, the measured 
- *    value is send out at the serial output of the Arduino. This can be plotted with the Serial Monitor.
- *    The hardware needs an additional circuit to create an optical isolation with the PC so the 
- *    instrument can still float if on battery power, and the USB monitoring device is protected from surges.
+ *    value is send out through the serial output pins of the Arduino. This can be plotted with the Arduino
+ *    IDE Serial Monitor.
+ *    IMPORTANT:
+ *    When you connect a serial to USB cable to the meter, you effectively connect the ground of the meter 
+ *    to the ground of the Laptop or PC that you use to collect the data. Depending of how you power the PC,
+ *    or what you have otherwise connected to the PC, like a network cable, a monitor or other USB devices, you
+ *    could have made a connection to earth ground.
+ *    This defeats the floating capability of the meter when you run it on the battery. Nasty things can happen 
+ *    when you connect the common measuring lead of the meter to the DUT. You could potentially create a short to
+ *    earth or lift the potential of your PC to whatever the voltage is that your common lead is connected to!
+ *    Please be aware of this.
+ *    
+ *    To avoid this, and make the meter truly floating again, the hardware needs an additional circuit to create an optical 
+ *    isolation between the PC and the meter so the instrument can still float if on battery power, and the USB monitoring 
+ *    device is protected.
  *
  *   Software version:
  */
@@ -71,6 +83,12 @@ String SW_VERSION = " Version 3.13";
 
 //---- initialize the i2c/LCD library
 FaBoLCD_PCF8574 lcd;                     // with this, there are no further code changes writing to the LCD
+
+//---- Logging parameters
+unsigned long startLogging;
+unsigned long currentMillis;
+boolean logging = false;
+int loggingInterval = 1000;             // log every 1000 mS for 1 second
 
 //---- Button and button debounce
 const int button = 2;                    // button is connected to D2, between VCC and with a 1K to ground.
@@ -251,6 +269,7 @@ void setup() {
   for (int i=0;i<5;i++) {                // disregard the first five readings as they seem unstable
     average = Spi_Read();                // and also seed the IIR filter
   }
+  startLogging = millis();               // starting timestamp for logging intervals  
 }
 
 
@@ -690,29 +709,47 @@ void loop() {
   // logging through the serial to USB interface of the Arduino can be done and monitored through the 
   // Arduino IDE Serial monitor. The display will be in Volts with 6 decimals, although this can be 
   // extended if you want. The format is always XX.YYYYYY
+  // to get a timestamp with the measurements, activate that in the Arduino Serial monitor bij
+  // activating the Show Timestamp option.
 
+  currentMillis = millis();
+  if ((currentMillis - startLogging) >= loggingInterval){
+    logging = true;
+    startLogging = millis(); // reset timer
+  }else{
+    logging = false;
+  }
+   
   if (volt <0.001) {                     // check if voltage reading is below 1 milli-Volt   
     volt = volt * 1000000;               // if so multiply reading by 1.000.000 and display as micro-Volt
     v = micro + "V     " ;               // use uV on display after voltage reading
     dec_digit = duV;                     // set display to 0 decimal places (1000000 uV)
     // for logging
-    Serial.println(volt/1000000,6);       // display resulution 0.1 uV
- 
+    if (logging){
+      Serial.println(volt/1000000,6);       // display resulution 0.1 uV
+    }
+    
   } else if (volt < 1){                  // check if voltage reading is below 1 volt
     volt = volt * 1000;                  // if below 1 volt multiply by 1.000 and display as Millivolt
     v = "mV     ";                       // use mV on display after voltage reading
     dec_digit = dmV;                     // set display to 4 decimal places (100.0000 mV)
-    Serial.println(volt/1000,6);       // display resulotion 0.1 uV
-
+    if (logging){
+      Serial.println(volt/1000,6);       // display resulotion 0.1 uV
+    }
+    
   } else if (volt < 10){                 // check if voltage reading is below 10 volt
     v = "V     ";                        // use V on display after voltage reading
     dec_digit = dV;                      // set display to 6 decimal places (1.000000 V)
-    Serial.println(volt,6);             // display resulotion 0.1 uV
+    if (logging) {
+      Serial.println(volt,6);             // display resulotion 0.1 uV
+    }
       
   } else {                               // volt is > 10V
     v = "V     ";                        // if 10 volt or higher use letter V on display after voltage reading
     dec_digit = dTV;                     // set display to 5 decimal places (10.00000 V)
-    Serial.println(volt,6);             // display resulotion 0.1 uV
+    if (logging){
+      Serial.println(volt,6);             // display resulotion 0.1 uV
+    }
   }
   
   lcd.setCursor(0, 1);                   // set LCD cursor to Column 0 and Row 1 (second row of LCD, first column)
