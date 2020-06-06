@@ -38,8 +38,8 @@
  *  - Version 3.13:
  *    First step to add remote logging of the measured values. With this modification, the measured 
  *    value is send out at the serial output of the Arduino. This can be plotted with the Serial Monitor.
- *    THe hardware needs an additional circuit to create an optical isolation with the PC so the 
- *    instrument can still float if on battery power, and the USB device is protected from surges.
+ *    The hardware needs an additional circuit to create an optical isolation with the PC so the 
+ *    instrument can still float if on battery power, and the USB monitoring device is protected from surges.
  *
  *   Software version:
  */
@@ -92,8 +92,8 @@ float volt;                              // voltage reading from ADC
                                          // Following measurements were made after a warm up, a null calibration, followed by
                                          // a calibration with a 5V0 Ref, loading the new value and doing the measurement again.
                                          // This is a critical measurement because it determines the linearity of the meter
-float v_ref = 4.09553;                   // ADR4540B Reference Voltage from the A meter
-//float v_ref = 4.09588;                   // ADR4540B Reference Voltage from the B meter
+//float v_ref = 4.09553;                 // ADR4540B Reference Voltage measured from my A meter
+float v_ref = 4.09588;                   // ADR4540B Reference Voltage measured from my B meter
 
 //---- IIR Low Pass Filtering with a dynamic filter weight algorithm
 float average;                            // holds the result of the filter
@@ -255,7 +255,9 @@ void setup() {
 
 
 /**************************************************************************************
+ * 
  * Routine to read the data from the LTC2400 A2D convertor through the SPI interface
+ * 
  */
 long Spi_Read(void){                     // SPI(Serial Peripheral Interface) read sub-routine to read data form the LTC2400 ADC
                                          // and transfer 8 bits (1 byte) at a time - total of 4 bytes.
@@ -296,8 +298,10 @@ long Spi_Read(void){                     // SPI(Serial Peripheral Interface) rea
 
 
 /**************************************************************************************
+ * 
  * Routine to run a zero offset calibration.
  * We'll calculate the input offset by manually shortening the input.
+ * 
  */
 void Zero_Cal_Adjust() {
   lcd.clear();
@@ -338,9 +342,11 @@ void Zero_Cal_Adjust() {
 
 
  /**************************************************************************************
+  * 
  * Routine to run the voltage calibration against a voltage reference.
  * The calibration factor is creatad by connecting a 2.50 reference
  * to the input. This will enhance the linearity of the conversion.
+ * 
  */
 void Ref_Cal_Adjust2() {
   lcd.clear();
@@ -385,9 +391,11 @@ void Ref_Cal_Adjust2() {
 
 
  /**************************************************************************************
+  * 
  * Routine to run the voltage calibration against a voltage reference.
  * The calibration factor is creatad by connecting a 5.0V reference
  * to the input. This will enhance the linearity of the conversion.
+ * 
  */
 void Ref_Cal_Adjust5() {
   lcd.clear();
@@ -431,9 +439,11 @@ void Ref_Cal_Adjust5() {
 }
 
  /**************************************************************************************
+  * 
  * Routine to run the voltage calibration against a voltage reference.
  * The calibration factor is creatad by connecting a 5.0V reference
  * to the input. This will enhance the linearity of the conversion.
+ * 
  */
 void Ref_Cal_Adjust7() {
   lcd.clear();
@@ -477,9 +487,11 @@ void Ref_Cal_Adjust7() {
 }
 
  /**************************************************************************************
+  * 
  * Routine to run the voltage calibration against a voltage reference.
  * The calibration factor is creatad by connecting a 5.0V reference
  * to the input. This will enhance the linearity of the conversion.
+ * 
  */
 void Ref_Cal_Adjust10() {
   lcd.clear();
@@ -524,7 +536,9 @@ void Ref_Cal_Adjust10() {
 
 
 /**************************************************************************************
+ * 
  * routine to check if the button was pressed, and depending on the length, decide what action to take
+ * 
  */
 void Button_press() {
   if (digitalRead(button) == HIGH) {     // only relevant for the polling loop
@@ -557,7 +571,9 @@ void Button_press() {
 
 
 /**************************************************************************************
+ * 
  * The battery level monitor routine
+ * 
  */
 void Monitor_batt() {
   int i;
@@ -603,7 +619,9 @@ void Monitor_batt() {
 
 
 /**************************************************************************************
+ * 
  * The main routine
+ * 
  */
 void loop() {
  
@@ -669,29 +687,33 @@ void loop() {
   //  ==>> for testing purposes only, read and display the 9V cell instead
   //  volt = (analogRead(A0) * (adc_ref_volts / adc_res) * 2) + adc_cal;
 
+  // logging through the serial to USB interface of the Arduino can be done and monitored through the 
+  // Arduino IDE Serial monitor. The display will be in Volts with 6 decimals, although this can be 
+  // extended if you want. The format is always XX.YYYYYY
+
   if (volt <0.001) {                     // check if voltage reading is below 1 milli-Volt   
     volt = volt * 1000000;               // if so multiply reading by 1.000.000 and display as micro-Volt
     v = micro + "V     " ;               // use uV on display after voltage reading
     dec_digit = duV;                     // set display to 0 decimal places (1000000 uV)
-    Serial.println(volt/1000000,7);       // display resulotion 0.1 uV
+    // for logging
+    Serial.println(volt/1000000,6);       // display resulution 0.1 uV
  
   } else if (volt < 1){                  // check if voltage reading is below 1 volt
     volt = volt * 1000;                  // if below 1 volt multiply by 1.000 and display as Millivolt
     v = "mV     ";                       // use mV on display after voltage reading
     dec_digit = dmV;                     // set display to 4 decimal places (100.0000 mV)
-    Serial.println(volt/1000,7);       // display resulotion 0.1 uV
+    Serial.println(volt/1000,6);       // display resulotion 0.1 uV
 
   } else if (volt < 10){                 // check if voltage reading is below 10 volt
     v = "V     ";                        // use V on display after voltage reading
     dec_digit = dV;                      // set display to 6 decimal places (1.000000 V)
-    Serial.println(volt,7);             // display resulotion 0.1 uV
+    Serial.println(volt,6);             // display resulotion 0.1 uV
       
   } else {                               // volt is > 10V
     v = "V     ";                        // if 10 volt or higher use letter V on display after voltage reading
     dec_digit = dTV;                     // set display to 5 decimal places (10.00000 V)
-    Serial.println(volt,7);             // display resulotion 0.1 uV
+    Serial.println(volt,6);             // display resulotion 0.1 uV
   }
-
   
   lcd.setCursor(0, 1);                   // set LCD cursor to Column 0 and Row 1 (second row of LCD, first column)
   lcd.print(volt, dec_digit);            // print voltage as floating number with x decimal places
