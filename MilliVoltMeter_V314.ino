@@ -1,6 +1,7 @@
-/* SCULLCOM HOBBY ELECTRONICS
+/* Original idea from:
+ *  SCULLCOM HOBBY ELECTRONICS
  * MILLIVOLT METER USING LTC2400 24bit ADC CHIP
- * Using the PCB designed by Greg
+ * Using the PCB designed by Greg Barbouri
  * http://www.barbouri.com/2016/05/26/millivolt-meter/
  *
  * ====  Arduino Pro MIni 5V 16MHz  ====
@@ -35,10 +36,10 @@
  *  - Version 3.12:
  *  - Added some tweaks and changes to allow a precise calibration of the reference voltage. This
  *    largely determines the linearity of the meter.
- *  - Version 3.13:
- *    First step to add remote logging of the measured values. With this modification, the measured 
+ *  - Version 3.14:
+ *    Added remote logging of the measured values. With this modification, the measured 
  *    value is send out through the serial output pins of the Arduino. This can be plotted with the Arduino
- *    IDE Serial Monitor.
+ *    IDE Serial Monitor or any other serial device. At this moment, the meter only sends data out.
  *    IMPORTANT:
  *    When you connect a serial to USB cable to the meter, you effectively connect the ground of the meter 
  *    to the ground of the Laptop or PC that you use to collect the data. Depending of how you power the PC,
@@ -51,11 +52,11 @@
  *    
  *    To avoid this, and make the meter truly floating again, the hardware needs an additional circuit to create an optical 
  *    isolation between the PC and the meter so the instrument can still float if on battery power, and the USB monitoring 
- *    device is protected.
+ *    device is protected. Please look at my blog for the details on how to do that.
  *
  *   Software version:
  */
-String SW_VERSION = " Version 3.14";
+String SW_VERSION = " Version 3.14"; // added the logging capability
 /*
  * LCD interface using the i2c bus:
  * http://fabo.io/212.html
